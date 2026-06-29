@@ -49,5 +49,18 @@ namespace MusicaStreaming.Api.Controllers
 
             return Ok(resultado);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> MinhaAssinatura()
+        {
+            var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(usuarioId))
+                return Unauthorized();
+
+            var resultado = await _mediator.Send(new GetMinhaAssinaturaQuery { UsuarioId = Guid.Parse(usuarioId) });
+            if (!resultado.Sucesso) return BadRequest(resultado);
+            return Ok(resultado);
+        }
+
     }
 }
