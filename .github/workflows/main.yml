@@ -1,0 +1,59 @@
+name: CI-CD
+
+# Dispara em push e pull request para a branch principal.
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # ============================================================
+  # CI: compila e roda os testes unitarios
+  # ============================================================
+  build-e-testes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restaurar dependencias
+        run: dotnet restore MusicaStreaming.sln
+
+      - name: Compilar (Release)
+        run: dotnet build MusicaStreaming.sln --configuration Release --no-restore
+
+      - name: Rodar testes
+        run: dotnet test MusicaStreaming.sln --configuration Release --no-build --verbosity normal
+
+  # ============================================================
+  # CD: empacota a API (publish) e guarda como artefato
+  # So roda se o job de build-e-testes passar (needs).
+  # ============================================================
+  publicar:
+    needs: build-e-testes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Publish da API
+        run: dotnet publish MusicaStreaming.Api/MusicaStreaming.Api.csproj --configuration Release --output ./publicado
+
+      - name: Subir artefato de implantacao
+        uses: actions/upload-artifact@v4
+        with:
+          name: musicastreaming-api
+          path: ./publicado
